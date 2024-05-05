@@ -1,0 +1,14 @@
+{
+  "compilerOptions": {
+    "target": "es2017",
+    "lib": ["ES2021.String"],
+    "module": "Node16",
+    "resolvePackageJsonExports": true,
+    "outDir": "./build",
+    "esModuleInterop": true,
+    "forceConsistentCasingInFileNames": true,
+    "strict": true,
+    "skipLibCheck": true,
+    "noImplicitAny": false
+  }
+}
