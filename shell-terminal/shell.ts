@@ -13,6 +13,12 @@ function processCommand(input: string): ChildProcessWithoutNullStreams | null {
 
   // The rest of the data is args to the command
   const args = inputArr.splice(1, inputArr.length);
+
+  switch (command) {
+    case '': {
+      return null;
+    }
+  }
 }
 
 function handleInput(input: string) {
