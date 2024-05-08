@@ -1,12 +1,45 @@
 import * as readline from 'readline';
-import { stdin, stdout } from 'process';
-import { ChildProcessWithoutNullStreams } from 'child_process';
+import { stderr, stdin, stdout, cwd, chdir } from 'process';
+import {
+  ChildProcess,
+  ChildProcessWithoutNullStreams,
+  spawn,
+} from 'child_process';
+import fs from 'fs';
+import { homedir } from 'os';
+import path from 'path';
 
 // Storing History in a list
+const HISTORY_FILE_PATH = path.join(homedir(), '.ccsh_history');
 const history = new Array<string>();
+const capacity = 1000;
 
 // Using the readline package to get input from the user
 const rl = readline.createInterface({ input: stdin, output: stdout });
+
+let childProcess: ChildProcessWithoutNullStreams | null;
+
+// handle when user send CTRL + C
+process.on('SIGINT', () => {
+  if (childProcess && childProcess.connected) {
+    childProcess.kill('SIGINT');
+    return;
+  }
+
+  writeHistory();
+  process.exit(0);
+});
+
+function addToHistory(input: string) {
+  if (history.length === capacity) {
+    history.splice(0, 1);
+  }
+  history.push(input);
+}
+
+function writeHistory() {
+  fs.writeFileSync(HISTORY_FILE_PATH, history.join('\n'));
+}
 
 function processCommand(input: string): ChildProcessWithoutNullStreams | null {
   const inputArr = input.split(' ');
@@ -44,12 +77,47 @@ function processCommand(input: string): ChildProcessWithoutNullStreams | null {
       return null;
     }
     case 'exit': {
+      // Write history data back to file and exit the process
+      writeHistory();
+      return process.exit(0);
+    }
+    default: {
+      try {
+        const newProcess = spawn(command, args);
+        return newProcess;
+      } catch (e) {
+        stderr.write('No such file or directory (os error 2)\n');
+      }
+      return null;
     }
   }
 }
 
 function handleInput(input: string) {
   childProcess = processCommand(input);
+
+  if (childProcess != null) {
+    childProcess.on('close', (code, signal) => {
+      if (signal === null && code === 0) {
+        addToHistory(input);
+      }
+      promptUser();
+    });
+
+    childProcess.stdout.on('data', async (data) => {
+      stdout.write(data.toString());
+    });
+
+    childProcess.stderr.on('data', async (data) => {
+      stderr.write(data.toString());
+    });
+
+    childProcess.on('error', () => {
+      stderr.write('No such file or directory (os error 2)\n');
+    });
+  } else {
+    promptUser();
+  }
 }
 
 /**
