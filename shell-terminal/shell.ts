@@ -37,6 +37,7 @@ function addToHistory(input: string) {
   history.push(input);
 }
 
+// write history
 function writeHistory() {
   fs.writeFileSync(HISTORY_FILE_PATH, history.join('\n'));
 }
